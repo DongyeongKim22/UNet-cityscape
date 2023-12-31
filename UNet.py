@@ -50,12 +50,32 @@ class UNet(nn.Module):
         self.Residual33 = nn.Conv2d(256, 256*2, kernel_size=1)
         self.BNEn33 = nn.BatchNorm2d(256*2, momentum=BN_momentum)
 
+        self.ConvEn41 = nn.Conv2d(256, 512*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
+        self.Residual41 = nn.Conv2d(256, 512*2, kernel_size=1)
+        self.BNEn41 = nn.BatchNorm2d(512*2, momentum=BN_momentum)
+        self.ConvEn42 = nn.Conv2d(512, 512*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
+        self.Residual42 = nn.Conv2d(512, 512*2, kernel_size=1)
+        self.BNEn42 = nn.BatchNorm2d(512*2, momentum=BN_momentum)
+        self.ConvEn43 = nn.Conv2d(512, 512*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
+        self.Residual43 = nn.Conv2d(512, 512*2, kernel_size=1)
+        self.BNEn43 = nn.BatchNorm2d(512*2, momentum=BN_momentum)
+
 
         #DECODING consists of 5 stages
         #Each stage corresponds to their respective counterparts in ENCODING
 
         #General Max Pool 2D/Upsampling for DECODING layers
         self.MaxDe = nn.MaxUnpool2d(kernel_size = 2, stride=2, padding = padding) 
+
+        self.ConvDe43 = nn.Conv2d(512*2, 512*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
+        self.ResidualDe43 = nn.Conv2d(512*2, 512*2, kernel_size=1)
+        self.BNDe43 = nn.BatchNorm2d(512*2, momentum=BN_momentum)
+        self.ConvDe42 = nn.Conv2d(512, 512*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
+        self.ResidualDe42 = nn.Conv2d(512, 512*2, kernel_size=1)
+        self.BNDe42 = nn.BatchNorm2d(512*2, momentum=BN_momentum)
+        self.ConvDe41 = nn.Conv2d(512, 256*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
+        self.ResidualDe41 = nn.Conv2d(512, 256*2, kernel_size=1)
+        self.BNDe41 = nn.BatchNorm2d(256*2, momentum=BN_momentum)
 
         self.ConvDe33 = nn.Conv2d(256*2, 256*2, kernel_size = kernel_size, stride = stride, padding = padding, padding_mode = 'reflect')
         self.ResidualDe33 = nn.Conv2d(256*2, 256*2, kernel_size=1)
@@ -121,45 +141,32 @@ class UNet(nn.Module):
         size3 = x.size()
         
         x, ind3 = self.MaxEn(x)
-        # x = self.dropout(x)
+        x = self.dropout(x)
 
-        # #4
-        # x = F.leaky_relu(self.BNEn41(self.ConvEn41(x))) 
-        # x = F.leaky_relu(self.BNEn42(self.ConvEn42(x))) 
-        # x = F.leaky_relu(self.BNEn43(self.ConvEn43(x)))   
-        # self.enc_outputs.append(x)
-        # size4 = x.size()
+        #4
+        residual = self.Residual41(x)
+        x = F.glu(self.BNEn41(self.ConvEn41(x))+residual, dim=1)
+        residual = self.Residual42(x)
+        x = F.glu(self.BNEn42(self.ConvEn42(x))+residual, dim=1)
+        residual = self.Residual43(x)
+        x = F.glu(self.BNEn43(self.ConvEn43(x))+residual, dim=1)   
+        self.enc_outputs.append(x)
+        size4 = x.size()
         
         # x, ind4 = self.MaxEn(x)
-        # x = self.dropout(x)
 
-        # #5
-        # x = F.leaky_relu(self.BNEn51(self.ConvEn51(x))) 
-        # x = F.leaky_relu(self.BNEn52(self.ConvEn52(x))) 
-        # x = F.leaky_relu(self.BNEn53(self.ConvEn53(x)))
-        # self.enc_outputs.append(x)
+        #5
+        # x = self.MaxDe(x, ind4, output_size=size3)
+        x = self.dropout(x)
+        x = torch.cat([x, self.enc_outputs.pop()], dim=1)
+        residual = self.ResidualDe43(x)
+        x = F.glu(self.BNDe43(self.ConvDe43(x))+residual, dim=1)
+        residual = self.ResidualDe42(x)
+        x = F.glu(self.BNDe42(self.ConvDe42(x))+residual, dim=1)
+        residual = self.ResidualDe41(x)
+        x = F.glu(self.BNDe41(self.ConvDe41(x))+residual, dim=1)
 
-        # size5 = x.size()
-        # x, ind5 = self.MaxEn(x)
-        
-        # #DECODE LAYERS
-        # #1
-        # x = self.MaxDe(x, ind5, output_size=size5)
-        # x = self.dropout(x)
-        # x = torch.cat([x, self.enc_outputs.pop()], dim=1)
-        # x = F.leaky_relu(self.BNDe53(self.ConvDe53(x)))
-        # x = F.leaky_relu(self.BNDe52(self.ConvDe52(x)))
-        # x = F.leaky_relu(self.BNDe51(self.ConvDe51(x)))
-
-        # #2
-        # x = self.MaxDe(x, ind4, output_size=size4)
-        # x = self.dropout(x)
-        # x = torch.cat([x, self.enc_outputs.pop()], dim=1)
-        # x = F.leaky_relu(self.BNDe43(self.ConvDe43(x)))
-        # x = F.leaky_relu(self.BNDe42(self.ConvDe42(x)))
-        # x = F.leaky_relu(self.BNDe41(self.ConvDe41(x)))
-
-        #3
+        #6
         x = self.MaxDe(x, ind3, output_size=size3)
         x = self.dropout(x)
         x = torch.cat([x, self.enc_outputs.pop()], dim=1)
@@ -170,7 +177,7 @@ class UNet(nn.Module):
         residual = self.ResidualDe31(x)
         x = F.glu(self.BNDe31(self.ConvDe31(x))+residual, dim=1)
 
-        #4
+        #7
         x = self.MaxDe(x, ind2, output_size=size2)
         x = self.dropout(x)
         x = torch.cat([x, self.enc_outputs.pop()], dim=1)
@@ -179,7 +186,7 @@ class UNet(nn.Module):
         residual = self.ResidualDe21(x)
         x = F.glu(self.BNDe21(self.ConvDe21(x))+residual, dim=1)
 
-        #5
+        #8
         x = self.MaxDe(x, ind1, output_size=size1)
         x = self.dropout(x)
         x = torch.cat([x, self.enc_outputs.pop()], dim=1)
