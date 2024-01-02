@@ -18,7 +18,9 @@
   6. ADAM for optimizer.
 
 The training process and monitoring are worked in google colab, and it doesn't allow to add all processed jupyter image logs in gitHub.
-For more information DM to LinkedIn - linkedin.com/in/shawn-kim-65a1aa1a2
+
+For more information DM to LinkedIn 
+[linkedin.com/in/shawn-kim-65a1aa1a2](https://www.linkedin.com/in/shawn-kim-65a1aa1a2?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3B6Exior1VSN20mXdTu%2Be4UA%3D%3D)
 or eMail to shawnkim1232@gmail.com
 
 ## Example of model results
